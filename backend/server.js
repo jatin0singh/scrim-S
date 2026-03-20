@@ -25,16 +25,20 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// 🚀 1. DATABASE CONNECTION
-const pool = mysql.createPool({
-    host: 'localhost',
-    user: 'root',
-    password: 'Jatin@123', 
-    database: 'scrims_s',
-    waitForConnections: true,
-    connectionLimit: 10,
-});
+ 
 
+// 🚀 CLOUD DATABASE CONNECTION
+const pool = mysql.createPool({
+    host: 'gateway01.ap-southeast-1.prod.aws.tidbcloud.com',
+    port: 4000,
+    user: '2e5zxGGtzoeG9UH.root',
+    password: '67yI0sUrvCXjd2x2', // 🔴 Put your real password here!
+    database: 'test',
+    ssl: {
+        minVersion: 'TLSv1.2',
+        rejectUnauthorized: true
+    }
+});
 // 🔐 2. AUTHENTICATION
 app.post('/api/register', async (req, res) => {
     try {
