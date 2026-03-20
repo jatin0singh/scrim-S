@@ -28,7 +28,7 @@ const Profile = () => {
     };
 
     const fetchProfileData = useCallback((uid) => {
-        fetch(`http://localhost:5000/api/profile/${uid}`)
+        fetch(`https://scrims-s.onrender.com/api/profile/${uid}`)
             .then(res => res.json())
             .then(data => {
                 if(!data.message) setProfileData(data);
@@ -57,7 +57,7 @@ const Profile = () => {
         formData.append('userId', userId);
 
         try {
-            const res = await fetch('http://localhost:5000/api/upload-avatar', {
+            const res = await fetch('https://scrims-s.onrender.com/api/upload-avatar', {
                 method: 'POST',
                 body: formData
             });
@@ -116,7 +116,7 @@ const Profile = () => {
         }
 
         try {
-            const res = await fetch(`http://localhost:5000${endpoint}`, {
+            const res = await fetch(`https://scrims-s.onrender.com${endpoint}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload)
@@ -248,7 +248,7 @@ const Profile = () => {
                     <div className="v4-card id-card">
                         <div className="card-glitch-bar"></div>
                         <div className="avatar-hexagon" onClick={() => fileInputRef.current.click()}>
-                            <img src={profileData.user.profile_pic ? `http://localhost:5000${profileData.user.profile_pic}` : "/default-avatar.png"} alt="Profile" />
+                            <img src={profileData.user.profile_pic ? `https://scrims-s.onrender.com${profileData.user.profile_pic}` : "/default-avatar.png"} alt="Profile" />
                             <div className="avatar-hover">UPLOAD</div>
                         </div>
 
@@ -303,7 +303,7 @@ const Profile = () => {
                                 <div className="roster-list">
                                     {profileData.teamMembers.map((member, idx) => (
                                         <div key={idx} className="roster-row">
-                                            <img src={member.profile_pic ? `http://localhost:5000${member.profile_pic}` : "/default-avatar.png"} alt="member" />
+                                            <img src={member.profile_pic ? `https://scrims-s.onrender.com${member.profile_pic}` : "/default-avatar.png"} alt="member" />
                                             <div>
                                                 <p>{member.username}</p>
                                                 <span>{member.ign || 'NO IGN'}</span>

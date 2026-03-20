@@ -26,7 +26,7 @@ const Wallet = () => {
         try {
             const user = JSON.parse(localStorage.getItem('user'));
             if (!user) return navigate('/login');
-            const res = await fetch(`http://localhost:5000/api/wallet/${user.id}`);
+            const res = await fetch(`https://scrims-s.onrender.com/api/wallet/${user.id}`);
             const data = await res.json();
             setBalance(data.balance || 0);
             setHistory(data.history || []);
@@ -44,7 +44,7 @@ const Wallet = () => {
         setStep(2); 
 
         try {
-            const orderRes = await fetch('http://localhost:5000/api/create-order', {
+            const orderRes = await fetch('https://scrims-s.onrender.com/api/create-order', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId: user.id, amount: depositAmt, method: 'UPI' })
@@ -52,7 +52,7 @@ const Wallet = () => {
             const orderData = await orderRes.json();
 
             setTimeout(async () => {
-                const verifyRes = await fetch('http://localhost:5000/api/verify-order', {
+                const verifyRes = await fetch('https://scrims-s.onrender.com/api/verify-order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ orderId: orderData.orderId, userId: user.id, amount: depositAmt })
@@ -74,7 +74,7 @@ const Wallet = () => {
     const user = JSON.parse(localStorage.getItem('user'));
     
     // 1. Verify PIN with Backend
-    const verifyRes = await fetch('http://localhost:5000/api/verify-pin', {
+    const verifyRes = await fetch('https://scrims-s.onrender.com/api/verify-pin', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId: user.id, pin: pin })
@@ -85,7 +85,7 @@ const Wallet = () => {
     }
 
     // 2. If PIN is correct, proceed with Withdrawal
-    const res = await fetch('http://localhost:5000/api/withdraw', {
+    const res = await fetch('https://scrims-s.onrender.com/api/withdraw', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 

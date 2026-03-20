@@ -31,13 +31,13 @@ const Lobby = () => {
             if (!storedUser) return navigate('/login');
             setUser(storedUser);
 
-            const walletRes = await fetch(`http://localhost:5000/api/wallet/${storedUser.id}`);
+            const walletRes = await fetch(`https://scrims-s.onrender.com/api/wallet/${storedUser.id}`);
             if (walletRes.ok) {
                 const walletData = await walletRes.json();
                 setBalance(walletData.balance);
             }
 
-            const response = await fetch(`http://localhost:5000/api/lobbies/${gameTypeParam}?userId=${storedUser.id}`);
+            const response = await fetch(`https://scrims-s.onrender.com/api/lobbies/${gameTypeParam}?userId=${storedUser.id}`);
             const data = await response.json();
             setLobbies(data);
         } catch (error) { 
@@ -64,7 +64,7 @@ const Lobby = () => {
             `Confirm deduction of ₹${fee} for Match #${lobbyId}?`, 
             "confirm", 
             async () => {
-                const response = await fetch('http://localhost:5000/api/join-lobby', {
+                const response = await fetch('https://scrims-s.onrender.com/api/join-lobby', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userId: user.id, lobbyId })
@@ -86,7 +86,7 @@ const Lobby = () => {
             "Cancel your slot? Funds will be credited back to your vault.", 
             "confirm", 
             async () => {
-                const response = await fetch('http://localhost:5000/api/leave-lobby', {
+                const response = await fetch('https://scrims-s.onrender.com/api/leave-lobby', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userId: user.id, lobbyId })
@@ -108,7 +108,7 @@ const Lobby = () => {
             "Do you want to host this arena?", 
             "confirm", 
             async () => {
-                const response = await fetch('http://localhost:5000/api/host-lobby', {
+                const response = await fetch('https://scrims-s.onrender.com/api/host-lobby', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ userId: user.id, lobbyId })

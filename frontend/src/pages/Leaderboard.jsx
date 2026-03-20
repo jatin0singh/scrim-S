@@ -9,7 +9,7 @@ const Leaderboard = () => {
     useEffect(() => {
         const fetchLeaderboard = async () => {
             try {
-                const response = await fetch('http://localhost:5000/api/leaderboard');
+                const response = await fetch('https://scrims-s.onrender.com/api/leaderboard');
                 const data = await response.json();
                 setPlayers(data);
             } catch (err) { console.error(err); }

@@ -39,7 +39,7 @@ const TeamRegistration = () => {
         const teammatesString = players.map(p => p.name).join(', ');
 
         try {
-            const res = await fetch('http://localhost:5000/api/register-team', {
+            const res = await fetch('https://scrims-s.onrender.com/api/register-team', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

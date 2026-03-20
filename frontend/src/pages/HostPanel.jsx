@@ -36,11 +36,11 @@ const HostPanel = () => {
     const syncHost = useCallback(async () => {
         try {
             const [lRes, rRes, sRes, cRes, pRes] = await Promise.all([
-                fetch(`http://localhost:5000/api/lobbies/room-check/${id}`),
-                fetch(`http://localhost:5000/api/lobby-participants/${id}`),
-                fetch(`http://localhost:5000/api/match-stats/${id}`), 
-                fetch(`http://localhost:5000/api/chat/${id}`),
-                fetch(`http://localhost:5000/api/proofs/${id}`) 
+                fetch(`https://scrims-s.onrender.com/api/lobbies/room-check/${id}`),
+                fetch(`https://scrims-s.onrender.com/api/lobby-participants/${id}`),
+                fetch(`https://scrims-s.onrender.com/api/match-stats/${id}`), 
+                fetch(`https://scrims-s.onrender.com/api/chat/${id}`),
+                fetch(`https://scrims-s.onrender.com/api/proofs/${id}`) 
             ]);
             
             if (lRes.ok) setLobby(await lRes.json());
@@ -79,7 +79,7 @@ const HostPanel = () => {
         formData.append('userId', user.id);
 
         try {
-            const res = await fetch('http://localhost:5000/api/upload-proof', { method: 'POST', body: formData });
+            const res = await fetch('https://scrims-s.onrender.com/api/upload-proof', { method: 'POST', body: formData });
             const data = await res.json();
             if (res.ok) { 
                 triggerPopup("UPLOAD SUCCESS", data.message, "success");
@@ -103,7 +103,7 @@ const HostPanel = () => {
     const executeFinishMatch = async () => {
         setModal({ show: false, type: '', val1: '', val2: '' });
         try {
-            const res = await fetch('http://localhost:5000/api/host/complete-match', {
+            const res = await fetch('https://scrims-s.onrender.com/api/host/complete-match', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ lobbyId: id, hostId: lobby.host_id })
@@ -125,7 +125,7 @@ const HostPanel = () => {
         if (!newMsg.trim()) return;
         const user = JSON.parse(localStorage.getItem('user'));
         try {
-            await fetch('http://localhost:5000/api/chat/send', {
+            await fetch('https://scrims-s.onrender.com/api/chat/send', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ lobbyId: id, userId: user.id, message: newMsg })
             });
@@ -137,7 +137,7 @@ const HostPanel = () => {
     // 🎛️ TOGGLE CHAT/UPLOADS
     const updateToggle = async (field, val) => {
         try {
-            await fetch('http://localhost:5000/api/host/toggle', {
+            await fetch('https://scrims-s.onrender.com/api/host/toggle', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ lobbyId: id, field, value: val ? 1 : 0 })
             });
@@ -148,7 +148,7 @@ const HostPanel = () => {
     // 📡 BROADCAST CREDENTIALS
     const handleBroadcast = async () => {
         try {
-            await fetch('http://localhost:5000/api/update-room', {
+            await fetch('https://scrims-s.onrender.com/api/update-room', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ lobbyId: id, roomId: roomData.id, roomPass: roomData.pass, startTime: roomData.startTime })
             });
@@ -166,7 +166,7 @@ const HostPanel = () => {
         if (isNaN(parsedVal)) return;
 
         try {
-            await fetch('http://localhost:5000/api/host/update-stats', {
+            await fetch('https://scrims-s.onrender.com/api/host/update-stats', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ lobbyId: id, teamName: teamName, field: fieldName, value: parsedVal })
             });
@@ -354,7 +354,7 @@ const HostPanel = () => {
                                             <span>{proof.team_name ? proof.team_name : proof.username}</span>
                                             {lobby.host_id === proof.user_id && <span style={{color: '#ffae00', fontWeight: 'bold'}}>(HOST)</span>}
                                         </p>
-                                        <a href={`http://localhost:5000${proof.image_url}`} target="_blank" rel="noreferrer"><img src={`http://localhost:5000${proof.image_url}`} alt="Proof" style={{ width: '100%', height: '150px', objectFit: 'cover', cursor: 'pointer', border: lobby.host_id === proof.user_id ? '2px solid #ffae00' : '1px solid #333', borderRadius: '4px' }}/></a>
+                                        <a href={`https://scrims-s.onrender.com${proof.image_url}`} target="_blank" rel="noreferrer"><img src={`https://scrims-s.onrender.com${proof.image_url}`} alt="Proof" style={{ width: '100%', height: '150px', objectFit: 'cover', cursor: 'pointer', border: lobby.host_id === proof.user_id ? '2px solid #ffae00' : '1px solid #333', borderRadius: '4px' }}/></a>
                                     </div>
                                 ))}
                                 {proofs.length === 0 && <p style={{ color: '#a1a1aa', fontFamily: 'Orbitron' }}>NO PROOFS SUBMITTED YET.</p>}

@@ -9,7 +9,7 @@ const AdminPanel = () => {
 
     const fetchRequests = async () => {
         try {
-            const res = await fetch('http://localhost:5000/api/admin/withdrawals');
+            const res = await fetch('https://scrims-s.onrender.com/api/admin/withdrawals');
             const data = await res.json();
 
             // 🛡️ Safety check: Ensure the data is actually a list
@@ -40,7 +40,7 @@ const AdminPanel = () => {
 
     const handleApprove = async (id) => {
         try {
-            const res = await fetch('http://localhost:5000/api/admin/approve-payout', {
+            const res = await fetch('https://scrims-s.onrender.com/api/admin/approve-payout', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ requestId: id })

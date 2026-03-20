@@ -20,21 +20,21 @@ const Dashboard = () => {
 
         try {
             // Fetch Vault Balance
-            const walletRes = await fetch(`http://localhost:5000/api/wallet/${storedUser.id}`);
+            const walletRes = await fetch(`https://scrims-s.onrender.com/api/wallet/${storedUser.id}`);
             if (walletRes.ok) {
                 const walletData = await walletRes.json();
                 setBalance(walletData.balance);
             }
 
             // Fetch Active Matches
-            const activeRes = await fetch(`http://localhost:5000/api/my-active-matches/${storedUser.id}`);
+            const activeRes = await fetch(`https://scrims-s.onrender.com/api/my-active-matches/${storedUser.id}`);
             if (activeRes.ok) {
                 const activeData = await activeRes.json();
                 setActiveMatches(activeData);
             }
 
             // Fetch Leaderboard
-            const leaderRes = await fetch(`http://localhost:5000/api/leaderboard`);
+            const leaderRes = await fetch(`https://scrims-s.onrender.com/api/leaderboard`);
             if (leaderRes.ok) {
                 const leaderData = await leaderRes.json();
                 setLeaderboard(leaderData);
