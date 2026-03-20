@@ -37,26 +37,40 @@ const pool = mysql.createPool({
         rejectUnauthorized: true
     }
 });
+ // 📅 1. COMPREHENSIVE SCHEDULE (All Tiers for every Time)
+const TIERS = [
+    { fee: 25, prize: 200 },
+    { fee: 35, prize: 300 },
+    { fee: 45, prize: 400 },
+    { fee: 50, prize: 500 },
+    { fee: 75, prize: 800 },
+    { fee: 100, prize: 1000 }
+];
 
-// 📅 1. DEFINE DYNAMIC MATCH SCHEDULE
-const MATCH_SCHEDULE = {
-    'Free Fire': [
-        { time: '12:00 AM', fee: 25, prize: 220 },
-        { time: '03:00 PM', fee: 35, prize: 320 },
-        { time: '06:00 PM', fee: 45, prize: 420 },
-        { time: '08:00 PM', fee: 50, prize: 520 },
-        { time: '10:00 PM', fee: 75, prize: 800 },
-        { time: '11:00 PM', fee: 100, prize: 1100 }
-    ],
-    'BGMI': [
-        { time: '12:00 AM', fee: 25, prize: 220 },
-        { time: '02:00 PM', fee: 35, prize: 320 },
-        { time: '05:00 PM', fee: 45, prize: 420 },
-        { time: '07:00 PM', fee: 50, prize: 520 },
-        { time: '09:00 PM', fee: 75, prize: 800 },
-        { time: '11:00 PM', fee: 100, prize: 1100 }
-    ]
-};
+const TIMES = ['12:00 AM', '03:00 PM', '06:00 PM', '09:00 PM'];
+
+// 🔄 2. UPDATED LOGIC: Checks for specific FEE + TIME combination
+async function ensureLobbiesExist(gameType) {
+    for (const time of TIMES) {
+        for (const tier of TIERS) {
+            // 🛡️ CRITICAL: Check if THIS specific tier at THIS specific time exists
+            const [existing] = await pool.query(
+                'SELECT id FROM lobbies WHERE game_type = ? AND slot_time = ? AND entry_fee = ? AND status != "COMPLETED"',
+                [gameType, time, tier.fee]
+            );
+
+            // If this specific combination is missing, create it!
+            if (existing.length === 0) {
+                await pool.query(
+                    `INSERT INTO lobbies (game_type, slot_time, entry_fee, prize_pool, max_slots, status, lobby_no) 
+                     VALUES (?, ?, ?, ?, 12, 'OPEN', 1)`,
+                    [gameType, time, tier.fee, tier.prize]
+                );
+                console.log(`✅ Deployed: ${gameType} | ${time} | ₹${tier.fee}`);
+            }
+        }
+    }
+}
 
 // 🔄 2. HELPER FUNCTION: ENSURE LOBBIES EXIST
 async function ensureLobbiesExist(gameType) {

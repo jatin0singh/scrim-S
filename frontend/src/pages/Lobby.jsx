@@ -1,4 +1,4 @@
-  import React, { useState, useEffect, useCallback } from 'react';
+ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
 const Lobby = () => {
@@ -8,22 +8,14 @@ const Lobby = () => {
     const isFF = location.pathname.includes('ff') || location.pathname.includes('freefire');
     const gameTypeParam = isFF ? 'ff' : 'bgmi';
     const gameName = isFF ? 'FREE FIRE MAX' : 'BGMI ESPORTS';
-    const themeClass = isFF ? 'theme-orange' : 'theme-blue';
+    const accentColor = isFF ? '#ff4655' : '#00f0ff';
 
-    const [activeSlot, setActiveSlot] = useState('12 AM');
     const [lobbies, setLobbies] = useState([]);
     const [balance, setBalance] = useState(0);
     const [user, setUser] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-
-    // 🛡️ NEW POPUP STATE
     const [popup, setPopup] = useState({ show: false, title: '', msg: '', type: 'info', onConfirm: null });
-
-    // Helper to trigger sexy popups
-    const triggerPopup = (title, msg, type = 'info', onConfirm = null) => {
-        setPopup({ show: true, title, msg, type, onConfirm });
-    };
 
     const fetchLobbiesAndWallet = useCallback(async () => {
         try {
@@ -32,19 +24,13 @@ const Lobby = () => {
             setUser(storedUser);
 
             const walletRes = await fetch(`https://scrims-s.onrender.com/api/wallet/${storedUser.id}`);
-            if (walletRes.ok) {
-                const walletData = await walletRes.json();
-                setBalance(walletData.balance);
-            }
+            const walletData = await walletRes.json();
+            setBalance(walletData.balance);
 
             const response = await fetch(`https://scrims-s.onrender.com/api/lobbies/${gameTypeParam}?userId=${storedUser.id}`);
             const data = await response.json();
             setLobbies(data);
-        } catch (error) { 
-            console.error("Fetch Error:", error); 
-        } finally { 
-            setIsLoading(false); 
-        }
+        } catch (error) { console.error(error); } finally { setIsLoading(false); }
     }, [gameTypeParam, navigate]);
 
     useEffect(() => { 
@@ -53,326 +39,197 @@ const Lobby = () => {
         return () => clearInterval(interval);
     }, [fetchLobbiesAndWallet]);
 
-    const handleBuySlot = async (lobbyId, fee) => {
-        if (balance < fee) {
-            return triggerPopup("INSUFFICIENT VAULT", `You need ₹${fee} to deploy. Current balance: ₹${balance}`, "error");
-        }
-        
-        // Show Confirmation Popup instead of browser confirm
-        triggerPopup(
-            "AUTHORIZE DEPLOYMENT", 
-            `Confirm deduction of ₹${fee} for Match #${lobbyId}?`, 
-            "confirm", 
-            async () => {
-                const response = await fetch('https://scrims-s.onrender.com/api/join-lobby', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: user.id, lobbyId })
-                });
-                const data = await response.json();
-                
-                if (response.ok) { 
-                    navigate(`/register-team/${lobbyId}`); 
-                } else {
-                    triggerPopup("UPLINK FAILED", data.message, "error");
-                }
-            }
-        );
+    const handleAction = (lobbyId, fee) => {
+        if (balance < fee) return setPopup({ show: true, title: "VAULT EMPTY", msg: `Deposit ₹${fee - balance} more to enter.`, type: "error" });
+        setPopup({ show: true, title: "CONFIRM ENTRY", msg: `Deduct ₹${fee} for Match #${lobbyId}?`, type: "confirm", onConfirm: async () => {
+            await fetch('https://scrims-s.onrender.com/api/join-lobby', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user.id, lobbyId })
+            });
+            navigate(`/register-team/${lobbyId}`);
+        }});
     };
 
-    const handleLeaveLobby = async (lobbyId) => {
-        triggerPopup(
-            "ABORT MISSION?", 
-            "Cancel your slot? Funds will be credited back to your vault.", 
-            "confirm", 
-            async () => {
-                const response = await fetch('https://scrims-s.onrender.com/api/leave-lobby', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: user.id, lobbyId })
-                });
-                const data = await response.json();
-                if (response.ok) {
-                    triggerPopup("SLOT RELEASED", "Your entry has been removed successfully.", "success");
-                    fetchLobbiesAndWallet();
-                } else {
-                    triggerPopup("ERROR", data.message, "error");
-                }
-            }
-        );
+    const handleHost = (lobbyId) => {
+        setPopup({ show: true, title: "CLAIM COMMAND", msg: "Initialize Host Terminal?", type: "confirm", onConfirm: async () => {
+            const res = await fetch('https://scrims-s.onrender.com/api/host-lobby', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: user.id, lobbyId })
+            });
+            if (res.ok) navigate(`/host/${lobbyId}`);
+        }});
     };
 
-    const handleHostLobby = async (lobbyId) => {
-        triggerPopup(
-            "CLAIM COMMAND?", 
-            "Do you want to host this arena?", 
-            "confirm", 
-            async () => {
-                const response = await fetch('https://scrims-s.onrender.com/api/host-lobby', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId: user.id, lobbyId })
-                });
-                const data = await response.json();
-                if (response.ok) { 
-                    triggerPopup("COMMAND ACQUIRED", "You are now the host. Redirecting to terminal...", "success");
-                    setTimeout(() => navigate(`/host/${lobbyId}`), 2000);
-                } else {
-                    triggerPopup("DENIED", data.message, "error");
-                }
-            }
-        );
-    };
-
-    const displayedLobbies = lobbies
-        .filter(l => l.slot_time === activeSlot)
-        .sort((a, b) => a.lobby_no - b.lobby_no);
-
-    const toggleMenu = () => setIsMobileMenuOpen(!isMobileMenuOpen);
-
+    // Logical Grouping
+    const myActive = lobbies.filter(l => l.isPlayer || l.isHost);
+     // Inside your Lobby component, update this line:
+const scheduleTimes = ['12:00 AM', '03:00 PM', '06:00 PM', '09:00 PM'];
     return (
-        <div className={`tactical-layout ${themeClass}`}>
-            <div className="ambient-glow"></div>
-            <div className="scanline-overlay"></div>
-
-            {/* 📱 MOBILE OVERLAY */}
-            {isMobileMenuOpen && <div className="mobile-overlay" onClick={toggleMenu}></div>}
-
-            {/* 💎 SEXY POPUP SYSTEM */}
+        <div className="v7-viewport" style={{ '--accent': accentColor }}>
             {popup.show && (
-                <div className="cyber-modal-overlay">
-                    <div className={`cyber-modal premium-glass ${popup.type}-border`}>
-                        <div className="modal-accent"></div>
-                        <h2 className="modal-title">
-                            {popup.type === 'error' ? '⚠️' : popup.type === 'success' ? '✅' : '🛡️'} {popup.title}
-                        </h2>
-                        <p className="modal-msg">{popup.msg}</p>
-                        
-                        <div className="modal-actions">
+                <div className="v7-modal-overlay">
+                    <div className={`v7-modal ${popup.type}`}>
+                        <h3>{popup.title}</h3>
+                        <p>{popup.msg}</p>
+                        <div className="v7-modal-btns">
                             {popup.type === 'confirm' ? (
                                 <>
-                                    <button className="modal-btn btn-cancel" onClick={() => setPopup({...popup, show: false})}>CANCEL</button>
-                                    <button className="modal-btn btn-confirm" onClick={() => { popup.onConfirm(); setPopup({...popup, show: false}); }}>CONFIRM</button>
+                                    <button onClick={() => setPopup({show:false})}>ABORT</button>
+                                    <button className="exec" onClick={() => { popup.onConfirm(); setPopup({show:false}); }}>CONFIRM</button>
                                 </>
-                            ) : (
-                                <button className="modal-btn btn-confirm" style={{width: '100%'}} onClick={() => setPopup({...popup, show: false})}>ACKNOWLEDGE</button>
-                            )}
+                            ) : <button className="exec" style={{width:'100%'}} onClick={() => setPopup({show:false})}>OK</button>}
                         </div>
                     </div>
                 </div>
             )}
 
-            <aside className={`tactical-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
-                <div className="sidebar-brand">
-                    <h2>SCRIMS<span className="text-theme">S</span></h2>
-                    <p className="sys-badge">ARENA_LIVE</p>
-                </div>
-                <nav className="cyber-nav">
-                    <button className="nav-btn" onClick={() => navigate('/dashboard')}><span className="icon">▤</span> DASHBOARD</button>
-                    <button className="nav-btn" onClick={() => navigate('/profile')}><span className="icon">👤</span> PROFILE</button>
-                    <button className="nav-btn" onClick={() => navigate('/wallet')}><span className="icon">🏦</span> VAULT</button>
+            <aside className={`v7-sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
+                <div className="v7-brand">SCRIMS<span>S</span></div>
+                <nav>
+                    <button onClick={() => navigate('/dashboard')}>▤ DASHBOARD</button>
+                    <button className="active">⚔️ ARENAS</button>
+                    <button onClick={() => navigate('/wallet')}>🏦 VAULT</button>
+                    <button onClick={() => navigate('/profile')}>👤 PROFILE</button>
                 </nav>
             </aside>
 
-            <main className="tactical-main">
-                <header className="tactical-header">
-                    <div className="header-left">
-                        <button className="mobile-menu-btn" onClick={toggleMenu}>☰</button>
-                        <div className="live-pulse-box"><span className="pulse-dot"></span> {gameName}</div>
+            <main className="v7-main">
+                <header className="v7-header">
+                    <div className="h-left">
+                        <button className="mob-btn" onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}>☰</button>
+                        <div className="game-status"><span className="pulse"></span> {gameName}</div>
                     </div>
-                    <div className="header-right" onClick={() => navigate('/wallet')} style={{cursor: 'pointer'}}>
-                        <div className="balance-pill premium-glass">
-                            <span className="b-label">VAULT:</span>
-                            <span className="b-amount text-green">₹{parseFloat(balance).toLocaleString('en-IN')}</span>
-                        </div>
+                    <div className="v7-balance" onClick={() => navigate('/wallet')}>
+                        <label>VAULT</label>
+                        <span>₹{parseFloat(balance).toLocaleString()}</span>
                     </div>
                 </header>
 
-                <div className="tactical-content">
-                    <div className="header-section">
-                        <h1 className="hero-title text-theme">{gameName} <span style={{color:'#fff'}}>ARENA</span></h1>
-                        <p className="hero-subtext">SELECT A TIME SLOT AND SECURE YOUR DEPLOYMENT</p>
-                    </div>
+                <div className="v7-content">
+                    {/* 🚀 TOP SECTION: MY ACTIVE MISSIONS */}
+                    <section className="v7-section active-missions">
+                        <h2 className="section-label">// MY ACTIVE MISSIONS</h2>
+                        <div className="horizontal-row">
+                            {myActive.length > 0 ? myActive.map(l => (
+                                <ActiveCard key={l.id} lobby={l} navigate={navigate} />
+                            )) : (
+                                <div className="no-active">NO ACTIVE DEPLOYMENTS. JOIN A MATCH BELOW.</div>
+                            )}
+                        </div>
+                    </section>
 
-                    <div className="time-slot-container">
-                        {['12 AM', '3 PM', '6 PM', '9 PM'].map(slot => (
-                            <button 
-                                key={slot} 
-                                className={`slot-tab ${activeSlot === slot ? 'active-slot' : ''}`}
-                                onClick={() => setActiveSlot(slot)}
-                            >
-                                {slot}
-                            </button>
-                        ))}
-                    </div>
-
-                    <div className="lobby-grid">
-                        {isLoading ? (
-                            <div className="empty-state">SCANNING FOR ACTIVE ARENAS...</div>
-                        ) : displayedLobbies.length === 0 ? (
-                            <div className="empty-state">NO DEPLOYMENTS FOUND FOR {activeSlot}</div>
-                        ) : (
-                            displayedLobbies.map(lobby => (
-                                <div key={lobby.id} className={`lobby-card premium-glass ${lobby.status === 'FULL' ? 'card-full' : ''}`}>
-                                    <div className="l-header">
-                                        <div className="l-tag-group">
-                                            <span className="l-id">MATCH #{lobby.id}</span>
-                                            <span className="l-number-tag">#LOBBY {lobby.lobby_no || 1}</span>
-                                        </div>
-                                        <span className={`status-badge ${lobby.status === 'FULL' ? 'bg-red' : 'bg-green'}`}>
-                                            {lobby.status}
-                                        </span>
-                                    </div>
-                                    
-                                    <div className="economy-info">
-                                        <div className="eco-box">
-                                            <p>ENTRY</p>
-                                            <h3 className="text-theme">₹{lobby.entry_fee}</h3>
-                                        </div>
-                                        <div className="eco-box prize-box">
-                                            <p>PRIZE</p>
-                                            <h3 className="text-green">₹{lobby.prize_pool}</h3>
-                                        </div>
-                                    </div>
-
-                                    <div className="progress-container">
-                                        <div className="progress-bar">
-                                            <div className="progress-fill" style={{ width: `${(lobby.slots_filled / lobby.max_slots) * 100}%`, background: lobby.status === 'FULL' ? '#ff4655' : 'var(--theme-color)' }}></div>
-                                        </div>
-                                        <div className="slots-label">
-                                            <span>SQUAD REGISTRY</span>
-                                            <p>{lobby.slots_filled} / {lobby.max_slots}</p>
-                                        </div>
-                                    </div>
-
-                                    <div className="host-info">COMMANDER: {lobby.host_id ? `USER #${lobby.host_id}` : 'PENDING ASSIGNMENT'}</div>
-
-                                    <div className="l-actions">
-                                        {lobby.isPlayer ? (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                                                {lobby.registeredTeam ? (
-                                                    <button className="btn-solid-green" onClick={() => navigate(`/match/${lobby.id}`)}>ENTER MATCH ROOM</button>
-                                                ) : (
-                                                    <button className="btn-solid-warning" onClick={() => navigate(`/register-team/${lobby.id}`)}>COMPLETE REGISTRATION</button>
-                                                )}
-                                                <button className="btn-cancel-slot" onClick={() => handleLeaveLobby(lobby.id)}>CANCEL MY SLOT</button>
-                                            </div>
-                                        ) : lobby.status === 'FULL' ? (
-                                            <button className="btn-disabled" disabled>LOBBY FULL</button>
-                                        ) : (
-                                            <button className="btn-solid-theme" onClick={() => handleBuySlot(lobby.id, lobby.entry_fee)}>BUY SLOT (₹{lobby.entry_fee})</button>
-                                        )}
-
-                                        {lobby.isHost ? (
-                                            <button className="btn-outline-host active-host" onClick={() => navigate(`/host/${lobby.id}`)}>GO TO HOST PANEL</button>
-                                        ) : (
-                                            <button className="btn-outline-host" onClick={() => handleHostLobby(lobby.id)} disabled={lobby.host_id !== null}>
-                                                {lobby.host_id ? 'HOST ASSIGNED' : 'HOST THIS ARENA'}
-                                            </button>
-                                        )}
-                                    </div>
-                                </div>
-                            ))
-                        )}
-                    </div>
+                    {/* 📅 BOTTOM SECTION: SCHEDULED TIMELINE */}
+                    {scheduleTimes.map(time => (
+                        <section className="v7-section" key={time}>
+                            <h2 className="section-label">// TIME TARGET: {time}</h2>
+                            <div className="horizontal-row">
+                                {lobbies.filter(l => l.slot_time === time).map(l => (
+                                    <ArenaTierCard key={l.id} lobby={l} onBuy={handleAction} onHost={handleHost} />
+                                ))}
+                            </div>
+                        </section>
+                    ))}
                 </div>
             </main>
 
             <style>{`
-                @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;700;900&family=Rajdhani:wght@500;700&family=Syncopate:wght@700&display=swap');
-                :root { --bg-main: #050507; --bg-panel: #0a0a0e; --border-color: #1a1a24; --neon-blue: #00d2ff; --neon-orange: #ffae00; --neon-green: #00ff66; --neon-red: #ff4655; }
-                .theme-orange { --theme-color: var(--neon-orange); --glow: rgba(255, 174, 0, 0.2); }
-                .theme-blue { --theme-color: var(--neon-blue); --glow: rgba(0, 210, 255, 0.2); }
-                * { box-sizing: border-box; }
-                body { margin: 0; background: var(--bg-main); color: #fff; font-family: 'Rajdhani', sans-serif; }
+                @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@700;900&family=Rajdhani:wght@600;700&family=Teko:wght@600&display=swap');
+                .v7-viewport { display: flex; height: 100vh; background: #000; color: #fff; font-family: 'Rajdhani'; overflow: hidden; }
+                .v7-sidebar { width: 260px; background: #050505; border-right: 1px solid #111; padding: 30px 20px; transition: 0.3s; z-index: 1000; }
+                .v7-brand { font-family: 'Orbitron'; font-size: 1.5rem; margin-bottom: 50px; font-weight: 900; }
+                .v7-brand span { color: var(--accent); }
+                nav button { width: 100%; background: transparent; border: none; color: #444; padding: 18px; text-align: left; font-family: 'Orbitron'; font-size: 0.7rem; cursor: pointer; transition: 0.2s; }
+                nav button.active { color: var(--accent); border-left: 3px solid var(--accent); background: rgba(255,255,255,0.02); }
                 
-                /* Modal Styling */
-                .cyber-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 2000; display: flex; align-items: center; justify-content: center; padding: 20px; animation: fadeIn 0.3s ease-out; }
-                .cyber-modal { width: 100%; max-width: 450px; padding: 40px; border-radius: 12px; text-align: center; position: relative; overflow: hidden; animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
-                .modal-accent { position: absolute; top: 0; left: 0; width: 100%; height: 4px; background: var(--theme-color); box-shadow: 0 0 15px var(--theme-color); }
-                .error-border { border: 1px solid var(--neon-red); }
-                .success-border { border: 1px solid var(--neon-green); }
-                .confirm-border { border: 1px solid var(--neon-blue); }
+                .v7-main { flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+                .v7-header { padding: 15px 30px; display: flex; justify-content: space-between; align-items: center; background: rgba(5,5,5,0.9); backdrop-filter: blur(10px); border-bottom: 1px solid #111; position: sticky; top: 0; z-index: 90; }
+                .v7-balance { background: #0a0a0a; border: 1px solid #1a1a1a; padding: 5px 20px; border-radius: 4px; cursor: pointer; text-align: right; }
+                .v7-balance label { font-family: 'Orbitron'; font-size: 0.5rem; color: #444; display: block; }
+                .v7-balance span { font-family: 'Teko'; font-size: 1.5rem; color: #00ff66; }
+
+                .v7-content { padding: 20px; }
+                .v7-section { margin-bottom: 40px; }
+                .section-label { font-family: 'Orbitron'; font-size: 0.75rem; letter-spacing: 2px; color: #333; margin-bottom: 15px; border-left: 3px solid var(--accent); padding-left: 10px; }
                 
-                .modal-title { font-family: 'Syncopate'; font-size: 1.2rem; margin-bottom: 20px; letter-spacing: 1px; color: #fff; }
-                .modal-msg { font-family: 'Rajdhani'; font-size: 1.1rem; color: #aaa; line-height: 1.6; margin-bottom: 30px; }
-                .modal-actions { display: flex; gap: 15px; }
-                .modal-btn { flex: 1; padding: 15px; font-family: 'Orbitron'; font-weight: 900; font-size: 0.8rem; cursor: pointer; border-radius: 4px; transition: 0.3s; border: none; }
-                .btn-confirm { background: var(--theme-color); color: #000; }
-                .btn-confirm:hover { background: #fff; box-shadow: 0 0 20px var(--theme-color); }
-                .btn-cancel { background: rgba(255,255,255,0.05); color: #fff; border: 1px solid #333; }
-                .btn-cancel:hover { background: var(--neon-red); border-color: var(--neon-red); color: #000; }
+                /* Horizontal Scroll */
+                .horizontal-row { display: flex; gap: 15px; overflow-x: auto; padding-bottom: 15px; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
+                .horizontal-row::-webkit-scrollbar { display: none; }
 
-                @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-                @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+                /* Active Card */
+                .active-card { min-width: 280px; background: #111; border: 1px solid var(--accent); padding: 20px; scroll-snap-align: start; position: relative; }
+                .active-card h4 { margin: 0; font-family: 'Orbitron'; color: var(--accent); font-size: 0.9rem; }
+                .active-card p { margin: 5px 0 15px 0; font-size: 0.8rem; color: #666; }
 
-                /* Standard tactical layout remains below... */
-                .tactical-layout { display: flex; height: 100vh; overflow: hidden; position: relative; }
-                .ambient-glow { position: fixed; inset: 0; background: radial-gradient(circle at 50% 0%, var(--glow), transparent 50%); pointer-events: none; }
-                .scanline-overlay { position: fixed; inset: 0; background: linear-gradient(to bottom, transparent 50%, rgba(0,0,0,0.1) 50%); background-size: 100% 4px; pointer-events: none; opacity: 0.3; }
-                .premium-glass { background: linear-gradient(135deg, rgba(20,20,25,0.8), rgba(10,10,12,0.9)); backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.05); }
-                .tactical-sidebar { width: 260px; background: var(--bg-panel); border-right: 1px solid var(--border-color); padding: 20px; transition: 0.3s ease; z-index: 100; }
-                .sidebar-brand h2 { font-family: 'Syncopate'; font-size: 1.5rem; margin: 0; }
-                .sys-badge { display: inline-block; background: rgba(255,255,255,0.05); color: var(--theme-color); font-family: 'Orbitron'; font-size: 0.6rem; padding: 4px 10px; border-radius: 4px; border: 1px solid var(--theme-color); margin-top: 5px;}
-                .cyber-nav { margin-top: 50px; display: flex; flex-direction: column; gap: 10px; }
-                .nav-btn { background: transparent; border: none; color: #888; padding: 15px; text-align: left; font-family: 'Orbitron'; cursor: pointer; border-radius: 4px; display: flex; align-items: center; gap: 15px; transition: 0.3s; }
-                .nav-btn.active { background: rgba(255,255,255,0.02); color: var(--theme-color); border-left: 3px solid var(--theme-color); }
-                .tactical-main { flex: 1; overflow-y: auto; position: relative; z-index: 5; }
-                .tactical-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 30px; border-bottom: 1px solid var(--border-color); background: rgba(10,10,14,0.8); position: sticky; top: 0; z-index: 50; }
-                .header-left { display: flex; align-items: center; gap: 15px; }
-                .mobile-menu-btn { display: none; background: transparent; border: 1px solid var(--border-color); color: #fff; font-size: 1.5rem; padding: 5px 12px; border-radius: 4px; }
-                .live-pulse-box { display: flex; align-items: center; gap: 10px; font-family: 'Orbitron'; font-size: 0.8rem; color: #888; }
-                .pulse-dot { width: 8px; height: 8px; background: var(--theme-color); border-radius: 50%; box-shadow: 0 0 10px var(--theme-color); }
-                .balance-pill { display: flex; align-items: center; gap: 10px; padding: 8px 20px; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); }
-                .b-label { font-family: 'Orbitron'; font-size: 0.7rem; color: #888; }
-                .b-amount { font-family: 'Syncopate'; font-size: 1.1rem; }
-                .tactical-content { padding: 40px; max-width: 1400px; margin: 0 auto; }
-                .header-section { text-align: center; margin-bottom: 40px; }
-                .hero-title { font-family: 'Syncopate'; font-size: 2.5rem; margin: 0; }
-                .hero-subtext { font-family: 'Orbitron'; color: #666; font-size: 0.8rem; letter-spacing: 2px; margin-top: 10px; }
-                .time-slot-container { display: flex; justify-content: center; gap: 15px; margin-bottom: 40px; flex-wrap: wrap; }
-                .slot-tab { padding: 12px 30px; background: var(--bg-panel); border: 1px solid var(--border-color); color: #555; font-family: 'Orbitron'; font-weight: bold; cursor: pointer; border-radius: 4px; transition: 0.3s; }
-                .active-slot { border-color: var(--theme-color); color: var(--theme-color); box-shadow: 0 0 15px var(--glow); }
-                .lobby-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 25px; }
-                .lobby-card { padding: 25px; border-radius: 12px; display: flex; flex-direction: column; gap: 20px; border-top: 2px solid transparent; transition: 0.3s; }
-                .lobby-card:hover { border-top-color: var(--theme-color); transform: translateY(-5px); }
-                .card-full { opacity: 0.6; filter: grayscale(0.5); }
-                .l-header { display: flex; justify-content: space-between; align-items: flex-start; }
-                .l-tag-group { display: flex; flex-direction: column; gap: 4px; }
-                .l-id { font-family: 'Syncopate'; font-size: 1rem; color: #fff; }
-                .l-number-tag { font-family: 'Orbitron'; font-size: 0.7rem; color: var(--theme-color); font-weight: 900; letter-spacing: 1px; }
-                .status-badge { font-family: 'Orbitron'; font-size: 0.6rem; padding: 4px 10px; border-radius: 4px; font-weight: 900; }
-                .bg-green { background: rgba(0,255,102,0.1); color: var(--neon-green); border: 1px solid var(--neon-green); }
-                .bg-red { background: rgba(255,70,85,0.1); color: var(--neon-red); border: 1px solid var(--neon-red); }
-                .economy-info { display: flex; gap: 15px; }
-                .eco-box { flex: 1; background: #000; padding: 15px; text-align: center; border: 1px solid var(--border-color); border-radius: 6px; }
-                .eco-box p { margin: 0 0 5px 0; font-size: 0.6rem; color: #555; font-family: 'Orbitron'; }
-                .eco-box h3 { margin: 0; font-family: 'Syncopate'; font-size: 1.2rem; }
-                .progress-bar { width: 100%; height: 6px; background: rgba(255,255,255,0.05); border-radius: 3px; overflow: hidden; }
-                .progress-fill { height: 100%; transition: 0.5s ease; }
-                .slots-label { display: flex; justify-content: space-between; font-size: 0.7rem; font-family: 'Orbitron'; color: #666; margin-top: 5px; }
-                .slots-label p { margin: 0; color: var(--theme-color); font-weight: bold; }
-                .host-info { font-family: 'Orbitron'; font-size: 0.7rem; color: #444; border-top: 1px solid var(--border-color); padding-top: 10px; }
-                .l-actions { display: flex; flex-direction: column; gap: 10px; }
-                .btn-solid-theme { width: 100%; padding: 14px; background: var(--theme-color); color: #000; border: none; font-family: 'Orbitron'; font-weight: 900; cursor: pointer; border-radius: 4px; clip-path: polygon(5% 0, 100% 0, 95% 100%, 0% 100%); }
-                .btn-solid-green { width: 100%; padding: 14px; background: var(--neon-green); color: #000; border: none; font-family: 'Orbitron'; font-weight: 900; cursor: pointer; border-radius: 4px; clip-path: polygon(5% 0, 100% 0, 95% 100%, 0% 100%); }
-                .btn-solid-warning { width: 100%; padding: 14px; background: #ffae00; color: #000; border: none; font-family: 'Orbitron'; font-weight: 900; cursor: pointer; border-radius: 4px; clip-path: polygon(5% 0, 100% 0, 95% 100%, 0% 100%); box-shadow: 0 0 15px rgba(255, 174, 0, 0.3); }
-                .btn-outline-host { width: 100%; padding: 12px; background: transparent; border: 1px solid #333; color: #555; font-family: 'Orbitron'; font-weight: bold; cursor: pointer; border-radius: 4px; }
-                .active-host { border-color: var(--theme-color); color: var(--theme-color); }
-                .btn-disabled { width: 100%; padding: 14px; background: rgba(255,255,255,0.05); color: #444; border: 1px solid #222; font-family: 'Orbitron'; font-weight: 900; cursor: not-allowed; border-radius: 4px; }
-                .btn-cancel-slot { width: 100%; padding: 10px; background: transparent; color: var(--neon-red); border: 1px solid var(--neon-red); font-family: 'Orbitron'; font-size: 0.7rem; font-weight: bold; cursor: pointer; border-radius: 4px; transition: 0.3s; text-transform: uppercase; letter-spacing: 1px; }
-                .btn-cancel-slot:hover { background: var(--neon-red); color: #000; box-shadow: 0 0 15px rgba(255, 70, 85, 0.3); }
-                .empty-state { text-align: center; padding: 100px; color: #444; font-family: 'Orbitron'; letter-spacing: 2px; width: 100%; }
+                /* Tier Card */
+                .tier-card { min-width: 280px; background: #080808; border: 1px solid #151515; padding: 20px; scroll-snap-align: start; border-top: 2px solid #222; }
+                .tier-card:hover { border-top-color: var(--accent); background: #0c0c0c; }
+                .t-header { display: flex; justify-content: space-between; margin-bottom: 15px; }
+                .t-fee { font-family: 'Teko'; font-size: 2rem; color: #fff; line-height: 1; }
+                .t-prize { font-family: 'Teko'; font-size: 2rem; color: #00ff66; line-height: 1; }
+                .pp-label { display: block; font-size: 0.5rem; color: #444; font-family: 'Orbitron'; }
+
+                .t-payouts { display: flex; justify-content: space-between; background: #000; padding: 8px; margin-bottom: 15px; border: 1px solid #111; }
+                .t-payouts div { text-align: center; }
+                .t-payouts span { display: block; font-size: 0.45rem; color: #444; font-family: 'Orbitron'; }
+                .t-payouts b { font-size: 0.75rem; color: var(--accent); }
+
+                .t-actions { display: flex; flex-direction: column; gap: 8px; }
+                .btn { width: 100%; padding: 12px; border: none; font-family: 'Orbitron'; font-weight: 900; font-size: 0.7rem; cursor: pointer; clip-path: polygon(4% 0, 100% 0, 96% 100%, 0% 100%); transition: 0.2s; }
+                .btn-primary { background: var(--accent); color: #000; }
+                .btn-success { background: #00ff66; color: #000; }
+                .btn-host { background: transparent; border: 1px solid #222; color: #444; }
+                .btn-host.active { border-color: var(--accent); color: var(--accent); }
+
+                .no-active { padding: 40px; text-align: center; border: 1px dashed #222; width: 100%; color: #333; font-family: 'Orbitron'; font-size: 0.7rem; }
 
                 @media (max-width: 900px) {
-                    .mobile-menu-btn { display: block; }
-                    .tactical-sidebar { position: fixed; left: -300px; top: 0; height: 100vh; box-shadow: 10px 0 30px #000; }
-                    .tactical-sidebar.open { left: 0; }
-                    .mobile-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 99; backdrop-filter: blur(3px); }
-                    .tactical-header { padding: 15px 20px; }
-                    .tactical-content { padding: 20px; }
+                    .mob-btn { display: block !important; background: transparent; border: none; color: #fff; font-size: 1.5rem; }
+                    .v7-sidebar { position: fixed; left: -260px; top: 0; height: 100vh; }
+                    .v7-sidebar.open { left: 0; }
+                    .v7-main { width: 100%; }
                 }
             `}</style>
+        </div>
+    );
+};
+
+const ActiveCard = ({ lobby, navigate }) => (
+    <div className="active-card">
+        <h4>MATCH #{lobby.id}</h4>
+        <p>{lobby.slot_time} • {lobby.status}</p>
+        {lobby.isHost ? (
+            <button className="btn btn-primary" onClick={() => navigate(`/host/${lobby.id}`)}>OPEN HOST PANEL</button>
+        ) : (
+            <button className="btn btn-success" onClick={() => navigate(`/match/${lobby.id}`)}>ENTER ROOM</button>
+        )}
+    </div>
+);
+
+const ArenaTierCard = ({ lobby, onBuy, onHost }) => {
+    // Dynamic Prize Multipliers
+    const p1 = lobby.entry_fee === 25 ? 100 : lobby.entry_fee === 35 ? 150 : lobby.entry_fee === 45 ? 200 : lobby.entry_fee === 50 ? 250 : lobby.entry_fee === 75 ? 400 : 500;
+    const p2 = p1 * 0.7;
+    const p3 = p1 * 0.5;
+
+    return (
+        <div className="tier-card">
+            <div className="t-header">
+                <div><span className="pp-label">ENTRY FEE</span><div className="t-fee">₹{lobby.entry_fee}</div></div>
+                <div style={{textAlign:'right'}}><span className="pp-label">PRIZE POOL</span><div className="t-prize">₹{lobby.prize_pool}</div></div>
+            </div>
+            <div className="t-payouts">
+                <div><span>1ST</span><b>₹{p1}</b></div>
+                <div><span>2ND</span><b>₹{Math.round(p2)}</b></div>
+                <div><span>3RD</span><b>₹{Math.round(p3)}</b></div>
+            </div>
+            <div className="t-actions">
+                <button className="btn btn-primary" disabled={lobby.status === 'FULL' || lobby.isPlayer} onClick={() => onBuy(lobby.id, lobby.entry_fee)}>
+                    {lobby.isPlayer ? 'DEPLOYED' : lobby.status === 'FULL' ? 'FULL' : `JOIN ₹${lobby.entry_fee}`}
+                </button>
+                <button className={`btn btn-host ${lobby.isHost ? 'active' : ''}`} disabled={lobby.host_id !== null && !lobby.isHost} onClick={() => onHost(lobby.id)}>
+                    {lobby.isHost ? 'COMMANDER ON-SITE' : lobby.host_id ? 'HOST ASSIGNED' : 'CLAIM COMMAND'}
+                </button>
+            </div>
         </div>
     );
 };
