@@ -10,6 +10,8 @@ import HostPanel from './pages/HostPanel';
 import Wallet from './pages/Wallet';
 import AdminPanel from './pages/AdminPanel';
 import TeamRegistration from './pages/TeamRegistration';
+ 
+ 
 
 function App() {
   return (
@@ -32,6 +34,7 @@ function App() {
         <Route path="/match/:id" element={<MatchRoom />} />
         <Route path="/host/:id" element={<HostPanel />} />
         <Route path="/register-team/:lobbyId" element={<TeamRegistration />} />
+        <Route path="/admin" element={<AdminPanel />} />
 
         {/* Administration */}
         <Route path="/scrims-admin" element={<AdminPanel />} />
