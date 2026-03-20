@@ -1,11 +1,11 @@
-import React, { useEffect, useState, useCallback, useRef } from 'react';
+ import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const Profile = () => {
     const navigate = useNavigate();
     const fileInputRef = useRef(null); 
     const [userId, setUserId] = useState(null);
-    const [isUploading, setIsUploading] = useState(false);
+    const [isUploading, setIsUploading] = useState(false); // 🛠️ Now used to show status
     
     // 📡 Real Data State
     const [profileData, setProfileData] = useState({
@@ -110,7 +110,6 @@ const Profile = () => {
         else if (modal.type === 'leave') {
             endpoint = '/api/team/leave';
         }
-        // ✅ NEW: REMOVE AVATAR ENDPOINT CALL
         else if (modal.type === 'remove-avatar') {
             endpoint = '/api/profile/remove-avatar';
         }
@@ -140,7 +139,6 @@ const Profile = () => {
             <div className="v4-bg-noise"></div>
             <div className="v4-ambient-glow"></div>
 
-            {/* 🛑 BRUTALIST POPUP */}
             {popup.show && (
                 <div className="v4-modal-overlay">
                     <div className={`v4-alert-box ${popup.type}-alert`}>
@@ -154,18 +152,17 @@ const Profile = () => {
                 </div>
             )}
 
-            {/* 🎛️ HIGH-TECH TERMINAL MODAL */}
             {modal.show && (
                 <div className="v4-modal-overlay">
                     <div className="v4-terminal-modal">
                         <div className="terminal-header">
                             <h3>
-                                {modal.type === 'edit' ? '// EDIT_IDENTITY' : 
-                                 modal.type === 'pin' ? '// SECURE_VAULT' :
-                                 modal.type === 'forgot-pin' ? '// OVERRIDE_PIN' :
-                                 modal.type === 'create' ? '// INIT_SQUAD' : 
-                                 modal.type === 'remove-avatar' ? '// DELETE_AVATAR' :
-                                 modal.type === 'leave' ? '// DESERT_SQUAD?' : '// JOIN_SQUAD'}
+                                {modal.type === 'edit' ? '{// EDIT_IDENTITY}' : 
+                                 modal.type === 'pin' ? '{// SECURE_VAULT}' :
+                                 modal.type === 'forgot-pin' ? '{// OVERRIDE_PIN}' :
+                                 modal.type === 'create' ? '{// INIT_SQUAD}' : 
+                                 modal.type === 'remove-avatar' ? '{// DELETE_AVATAR}' :
+                                 modal.type === 'leave' ? '{// DESERT_SQUAD?}' : '{// JOIN_SQUAD}'}
                             </h3>
                             <button className="close-terminal" onClick={() => setModal({show: false, type: '', val1: '', val2: ''})}>×</button>
                         </div>
@@ -210,7 +207,6 @@ const Profile = () => {
                             {modal.type === 'leave' && (
                                 <p className="warning-text">WARNING: Leaving will sever all ties with your current roster. Proceed?</p>
                             )}
-                            {/* ✅ NEW: CONFIRM AVATAR DELETION */}
                             {modal.type === 'remove-avatar' && (
                                 <p className="warning-text" style={{color: 'var(--v4-cyan)'}}>Confirm deletion of your visual signature? You will be reverted to the default operative avatar.</p>
                             )}
@@ -226,7 +222,6 @@ const Profile = () => {
 
             <input type="file" ref={fileInputRef} accept="image/*" style={{ display: 'none' }} onChange={handleAvatarUpload} />
 
-            {/* 🛸 NAVBAR */}
             <nav className="v4-nav">
                 <div className="nav-brand" onClick={() => navigate('/dashboard')}>
                     SCRIMS<span className="accent-red">S</span>
@@ -239,20 +234,19 @@ const Profile = () => {
                 </div>
             </nav>
 
-            {/* ⚔️ MAIN GRID */}
             <div className="v4-container">
-                
-                {/* LEFT SIDEBAR */}
                 <aside className="v4-sidebar">
-                    {/* Identity Block */}
                     <div className="v4-card id-card">
                         <div className="card-glitch-bar"></div>
-                        <div className="avatar-hexagon" onClick={() => fileInputRef.current.click()}>
+                        <div 
+                            className="avatar-hexagon" 
+                            onClick={() => !isUploading && fileInputRef.current.click()} 
+                            style={{ cursor: isUploading ? 'wait' : 'pointer' }}
+                        >
                             <img src={profileData.user.profile_pic ? `https://scrims-s.onrender.com${profileData.user.profile_pic}` : "/default-avatar.png"} alt="Profile" />
-                            <div className="avatar-hover">UPLOAD</div>
+                            <div className="avatar-hover">{isUploading ? 'SYNCING...' : 'UPLOAD'}</div>
                         </div>
 
-                        {/* ✅ NEW: REMOVE AVATAR BUTTON (Only shows if an image is uploaded) */}
                         {profileData.user.profile_pic && (
                             <button className="remove-avatar-btn" onClick={() => setModal({ show: true, type: 'remove-avatar', val1: '', val2: '' })}>
                                 [ REMOVE AVATAR ]
@@ -260,14 +254,13 @@ const Profile = () => {
                         )}
 
                         <h2 className="user-name">{profileData.user.username.toUpperCase()}</h2>
-                        <div className="user-ign">IGN // <span>{profileData.user.ign || 'UNREGISTERED'}</span></div>
+                        <div className="user-ign">{'IGN // '} <span>{profileData.user.ign || 'UNREGISTERED'}</span></div>
 
                         <button className="v4-btn-outline edit-id-btn" onClick={() => setModal({ show: true, type: 'edit', val1: profileData.user.username, val2: profileData.user.ign || '' })}>
                             EDIT IDENTITY
                         </button>
                     </div>
 
-                    {/* Security Block */}
                     <div className="v4-card sec-card">
                         <h3 className="card-title">VAULT SECURITY</h3>
                         <div className={`sec-status ${profileData.user.security_pin ? "active" : "disabled"}`}>
@@ -282,7 +275,6 @@ const Profile = () => {
                         )}
                     </div>
 
-                    {/* Squad Block */}
                     <div className="v4-card squad-card">
                         <h3 className="card-title">SQUAD AFFILIATION</h3>
                         <div className="squad-name">{profileData.team}</div>
@@ -327,17 +319,13 @@ const Profile = () => {
                     </div>
                 </aside>
 
-                {/* RIGHT CONTENT */}
                 <main className="v4-main-content">
-                    
-                    {/* Massive Vault Display */}
                     <div className="v4-vault-display">
                         <div className="vault-bg-text">FUNDS</div>
                         <div className="vault-meta">TOTAL EXTRACTABLE BALANCE</div>
                         <h1 className="vault-amount">₹{parseFloat(profileData.user.total_earnings || 0).toLocaleString('en-IN')}</h1>
                     </div>
 
-                    {/* Stats Grid */}
                     <div className="v4-stats-grid">
                         <div className="stat-module">
                             <span className="stat-label">MATCHES PLAYED</span>
@@ -354,9 +342,8 @@ const Profile = () => {
                         </div>
                     </div>
 
-                    {/* History List */}
                     <div className="v4-history-section">
-                        <h3 className="history-title">// DEPLOYMENT_LOG</h3>
+                        <h3 className="history-title">{'// DEPLOYMENT_LOG'}</h3>
                         <div className="history-wrapper">
                             {profileData.history.length > 0 ? (
                                 profileData.history.map((match, i) => (
@@ -396,7 +383,6 @@ const Profile = () => {
                 .v4-bg-noise { position: fixed; inset: 0; background: url('https://grainy-gradients.vercel.app/noise.svg'); opacity: 0.1; pointer-events: none; z-index: 0; }
                 .v4-ambient-glow { position: fixed; top: -20%; right: -10%; width: 50vw; height: 50vh; background: radial-gradient(circle, rgba(0, 240, 255, 0.05) 0%, transparent 60%); z-index: 1; pointer-events: none; }
                 
-                /* TACTICAL NAV */
                 .v4-nav { position: relative; z-index: 10; display: flex; justify-content: space-between; align-items: center; padding: 20px 5%; border-bottom: 1px solid var(--v4-border); background: rgba(5, 5, 7, 0.9); backdrop-filter: blur(10px); }
                 .nav-brand { font-family: 'Teko', sans-serif; font-size: 2rem; font-weight: 700; letter-spacing: 2px; cursor: pointer; line-height: 1; }
                 .accent-red { color: var(--v4-red); }
@@ -406,15 +392,12 @@ const Profile = () => {
                 .nav-item.active::before { content: ''; position: absolute; top: -20px; left: 0; width: 100%; height: 3px; background: var(--v4-cyan); box-shadow: 0 0 10px var(--v4-cyan); }
                 .logout-btn:hover { color: var(--v4-red) !important; }
 
-                /* GRID LAYOUT */
                 .v4-container { display: grid; grid-template-columns: 340px 1fr; gap: 40px; padding: 40px 5%; max-width: 1500px; margin: 0 auto; position: relative; z-index: 5; }
                 
-                /* V4 CARDS */
                 .v4-card { background: var(--v4-card); border: 1px solid var(--v4-border); padding: 30px; position: relative; }
                 .card-glitch-bar { position: absolute; top: -1px; left: -1px; width: 40px; height: 3px; background: var(--v4-cyan); }
                 .card-title { font-family: 'Orbitron'; font-size: 0.8rem; color: var(--v4-muted); margin: 0 0 20px 0; letter-spacing: 2px; border-bottom: 1px solid var(--v4-border); padding-bottom: 10px; }
 
-                /* IDENTITY BLOCK */
                 .id-card { text-align: center; display: flex; flex-direction: column; align-items: center; }
                 .avatar-hexagon { width: 130px; height: 130px; margin-bottom: 10px; cursor: pointer; position: relative; clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%); background: var(--v4-cyan); padding: 3px; transition: 0.3s; }
                 .avatar-hexagon img { width: 100%; height: 100%; object-fit: cover; clip-path: polygon(30% 0%, 70% 0%, 100% 30%, 100% 70%, 70% 100%, 30% 100%, 0% 70%, 0% 30%); background: var(--v4-bg); }
@@ -422,7 +405,6 @@ const Profile = () => {
                 .avatar-hexagon:hover .avatar-hover { opacity: 1; }
                 .avatar-hexagon:hover { transform: scale(1.05); }
                 
-                /* ✅ REMOVE AVATAR STYLES */
                 .remove-avatar-btn { background: none; border: none; color: var(--v4-red); font-family: 'Orbitron'; font-size: 0.6rem; font-weight: 700; letter-spacing: 2px; cursor: pointer; margin-bottom: 15px; transition: 0.2s; }
                 .remove-avatar-btn:hover { color: #fff; text-shadow: 0 0 10px var(--v4-red); }
 
@@ -430,13 +412,11 @@ const Profile = () => {
                 .user-ign { font-family: 'Orbitron'; font-size: 0.7rem; color: var(--v4-muted); letter-spacing: 2px; margin-bottom: 30px; }
                 .user-ign span { color: var(--v4-text); font-weight: 700; }
 
-                /* SECURITY BLOCK */
                 .sec-status { display: flex; align-items: center; gap: 10px; font-family: 'Orbitron'; font-size: 0.7rem; font-weight: 700; letter-spacing: 1px; margin-bottom: 20px; padding: 12px; background: rgba(255,255,255,0.02); border: 1px solid var(--v4-border); }
                 .sec-status.active { border-left: 3px solid var(--v4-cyan); color: var(--v4-cyan); }
                 .sec-status.disabled { border-left: 3px solid var(--v4-red); color: var(--v4-red); }
                 .sec-dot { width: 8px; height: 8px; background: currentColor; box-shadow: 0 0 10px currentColor; }
 
-                /* SQUAD BLOCK */
                 .squad-name { font-family: 'Teko'; font-size: 2rem; line-height: 1; margin-bottom: 20px; }
                 .invite-code-box { background: rgba(0, 240, 255, 0.05); border: 1px dashed var(--v4-cyan); padding: 15px; text-align: center; cursor: pointer; margin-bottom: 20px; transition: 0.2s; }
                 .invite-code-box:hover { background: rgba(0, 240, 255, 0.1); }
@@ -451,7 +431,6 @@ const Profile = () => {
                 .roster-row p { margin: 0; font-family: 'Orbitron'; font-size: 0.75rem; font-weight: 700; }
                 .roster-row span { font-size: 0.7rem; color: var(--v4-cyan); }
 
-                /* BUTTONS V4 */
                 .v4-btn-solid { width: 100%; background: var(--v4-cyan); color: #000; border: none; padding: 16px; font-family: 'Orbitron'; font-weight: 900; font-size: 0.8rem; letter-spacing: 2px; cursor: pointer; transition: 0.2s; clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); }
                 .v4-btn-solid:hover { background: #fff; box-shadow: 0 0 20px var(--v4-cyan); }
                 
@@ -467,7 +446,6 @@ const Profile = () => {
                 .squad-btn-group { display: flex; gap: 15px; }
                 .mini-btn { padding: 12px; font-size: 0.7rem; }
 
-                /* MAIN VAULT & STATS */
                 .v4-main-content { display: flex; flex-direction: column; gap: 30px; }
                 
                 .v4-vault-display { position: relative; background: var(--v4-card); border: 1px solid var(--v4-border); padding: 40px; overflow: hidden; border-left: 4px solid var(--v4-cyan); }
@@ -481,14 +459,12 @@ const Profile = () => {
                 .stat-label { font-family: 'Orbitron'; font-size: 0.65rem; color: var(--v4-muted); letter-spacing: 2px; margin-bottom: 10px; }
                 .stat-num { font-family: 'Teko'; font-size: 3.5rem; line-height: 1; }
                 
-                /* ✅ RATING MOVED INSIDE HOST MODULE */
                 .host-module { border-bottom: 2px solid var(--v4-cyan); }
                 .host-rating-tag { display: inline-block; background: rgba(0, 240, 255, 0.1); color: var(--v4-cyan); font-family: 'Orbitron'; font-size: 0.65rem; font-weight: 900; padding: 4px 10px; border-radius: 2px; margin-top: 10px; width: fit-content; }
                 
                 .win-module { border-bottom: 2px solid var(--v4-red); }
                 .win-module .stat-num { color: var(--v4-red); text-shadow: 0 0 15px rgba(255, 70, 85, 0.3); }
 
-                /* HISTORY */
                 .v4-history-section { flex: 1; background: var(--v4-card); border: 1px solid var(--v4-border); padding: 30px; }
                 .history-title { font-family: 'Orbitron'; font-size: 0.9rem; letter-spacing: 2px; margin: 0 0 25px 0; color: var(--v4-muted); }
                 .history-wrapper { display: flex; flex-direction: column; gap: 10px; }
@@ -502,7 +478,6 @@ const Profile = () => {
                 .h-role.player { color: var(--v4-cyan); border: 1px solid var(--v4-cyan); }
                 .history-empty { text-align: center; padding: 40px; font-family: 'Orbitron'; color: #444; letter-spacing: 2px; }
 
-                /* 🎛️ NEW TERMINAL MODALS */
                 .v4-modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.9); backdrop-filter: blur(5px); z-index: 2000; display: flex; align-items: center; justify-content: center; animation: fadeIn 0.2s; }
                 .v4-terminal-modal { width: 100%; max-width: 450px; background: var(--v4-bg); border: 1px solid #333; box-shadow: 0 20px 50px rgba(0,0,0,0.8); animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1); }
                 .terminal-header { background: #111; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; }
@@ -514,7 +489,6 @@ const Profile = () => {
                 .input-group { margin-bottom: 25px; text-align: left; }
                 .input-group label { display: block; font-family: 'Orbitron'; font-size: 0.65rem; color: var(--v4-muted); margin-bottom: 8px; letter-spacing: 1px; }
                 
-                /* ✅ SEXY FLOATING INPUTS */
                 .v4-input { width: 100%; background: transparent; border: none; border-bottom: 2px solid #333; color: #fff; padding: 10px 5px; font-family: 'Rajdhani'; font-size: 1.2rem; font-weight: 600; outline: none; transition: 0.3s; }
                 .v4-input:focus { border-bottom-color: var(--v4-cyan); text-shadow: 0 0 10px rgba(0, 240, 255, 0.5); }
                 .pin-entry { font-family: 'Orbitron'; font-size: 2rem; letter-spacing: 20px; text-align: center; }
@@ -523,7 +497,6 @@ const Profile = () => {
                 
                 .terminal-footer { display: flex; gap: 15px; padding: 20px 30px; background: #0a0a0d; border-top: 1px solid #222; }
 
-                /* BRUTALIST ALERTS */
                 .v4-alert-box { width: 400px; background: var(--v4-card); border: 1px solid #333; padding: 40px; text-align: center; position: relative; }
                 .alert-deco-line { position: absolute; top: 0; left: 0; width: 100%; height: 3px; }
                 .error-alert .alert-deco-line { background: var(--v4-red); box-shadow: 0 0 20px var(--v4-red); }

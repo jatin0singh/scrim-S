@@ -1,4 +1,4 @@
- import React, { useEffect, useState, useCallback, useRef } from 'react';
+  import React, { useEffect, useState, useCallback } from 'react'; // 🛠️ Fixed: Removed unused useRef
 import { useParams, useNavigate } from 'react-router-dom';
 
 const HostPanel = () => {
@@ -254,7 +254,6 @@ const HostPanel = () => {
                 </header>
 
                 <div className="cyber-content">
-                    {/* ⚡ MODULE: COMMAND */}
                     {activeTab === 'COMMAND' && (
                         <div className="module-grid">
                             <div className="cyber-card">
@@ -276,7 +275,6 @@ const HostPanel = () => {
                                     </div>
                                 </div>
 
-                                {/* ⭐ HOST RATING & PAYOUT BOX */}
                                 <div className="cyber-card">
                                     <h3 className="card-title" style={{color: '#ffae00'}}>HOST RATING</h3>
                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '15px' }}>
@@ -364,7 +362,6 @@ const HostPanel = () => {
                 </div>
             </main>
 
-            {/* 🎨 STYLES */}
             <style>{`
                 @import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@500;900&family=Rajdhani:wght@500;700&display=swap');
                 :root { --bg-dark: #09090b; --bg-panel: #121216; --neon-blue: #00f0ff; --neon-red: #ff003c; --neon-green: #00ff66; --text-main: #f4f4f5; --text-muted: #a1a1aa; --border: #27272a; }
