@@ -197,6 +197,15 @@ app.get('/api/lobby-participants/:lobbyId', async (req, res) => {
         res.json(rows);
     } catch (error) { res.status(500).json({ message: 'Error fetching roster' }); }
 });
+// 🛡️ ADMIN: GET ALL USERS
+app.get('/api/admin/users', async (req, res) => {
+    try {
+        const [rows] = await pool.query('SELECT id, username, email, ign, total_earnings FROM users ORDER BY id DESC');
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // 📊 HOST STATS & SCORING
 app.post('/api/host/toggle', async (req, res) => {
