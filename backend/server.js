@@ -245,4 +245,8 @@ app.get('/api/admin/withdrawals', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`🚀 SCRIMS S System Online on Port ${PORT}`));
+
+// Render needs "0.0.0.0" to communicate with the outside world
+app.listen(PORT, "0.0.0.0", () => {
+    console.log(`🚀 SCRIMS S System Online on Port ${PORT}`);
+});
