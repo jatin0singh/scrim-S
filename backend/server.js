@@ -300,7 +300,20 @@ app.post('/api/chat/send', async (req, res) => {
         await pool.query('INSERT INTO lobby_chat (lobby_id, user_id, message) VALUES (?, ?, ?)', [req.body.lobbyId, req.body.userId, req.body.message]); res.json({ success: true });
     } catch (err) { res.status(500).json({ message: 'Chat send failed' }); }
 });
-
+// 💰 ADMIN: GET ALL DEPOSITS (Add Money)
+app.get('/api/admin/deposits', async (req, res) => {
+    try {
+        const [rows] = await pool.query(`
+            SELECT t.*, u.username 
+            FROM transactions t 
+            JOIN users u ON t.user_id = u.id 
+            ORDER BY t.created_at DESC
+        `);
+        res.json(rows);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 // 🔐 PROFILE, SECURITY PIN & AVATARS
 app.post('/api/profile/set-pin', async (req, res) => {
     const { userId, newPin } = req.body;
