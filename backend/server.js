@@ -180,6 +180,36 @@ app.get('/api/profile/:userId', async (req, res) => {
     const [userRows] = await pool.query('SELECT username, ign, total_earnings, team_name, profile_pic FROM users WHERE id = ?', [req.params.userId]);
     res.json({ user: userRows[0] });
 });
+// 🚀 FIX 1: Active Matches for Dashboard
+app.get('/api/my-active-matches/:userId', async (req, res) => {
+    try {
+        const [rows] = await pool.query(`
+            SELECT l.* FROM lobbies l
+            JOIN participants p ON l.id = p.lobby_id
+            WHERE p.user_id = ? AND l.status != 'COMPLETED'
+            UNION
+            SELECT * FROM lobbies WHERE host_id = ? AND status != 'COMPLETED'
+        `, [req.params.userId, req.params.userId]);
+        res.json(rows);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+
+// 🚀 FIX 2: Team Registration Post Route
+app.post('/api/register-team', async (req, res) => {
+    try {
+        const { userId, lobbyId, teamName, teammates } = req.body;
+        await pool.query(
+            'UPDATE participants SET team_name = ?, teammates = ? WHERE user_id = ? AND lobby_id = ?',
+            [teamName, teammates, userId, lobbyId]
+        );
+        res.json({ message: 'TEAM REGISTERED SUCCESSFULLY!' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Registration failed' });
+    }
+});
 
 // 🏆 8. LEADERBOARD
 app.get('/api/leaderboard', async (req, res) => {
